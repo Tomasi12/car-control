@@ -1,11 +1,12 @@
 {
   "configurations": [
     {
-      "name": "dummy_ecu",
+      "name": "car-control",
       "compileCommands": "${workspaceFolder}/build/compile_commands.json",
       "includePath": ["${workspaceFolder}/include"],
-      "cStandard": "c11",
-      "cppStandard": "c++17"
+      "compilerPath": "${workspaceFolder}/third_party/mingw64/bin/gcc.exe",
+      "cStandard": "c99",
+      "intelliSenseMode": "windows-gcc-x64"
     }
   ],
   "version": 4
