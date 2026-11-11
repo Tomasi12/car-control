@@ -1,12 +1,18 @@
 <#
 .SYNOPSIS
-  Builds dummy_ecu. Uses CMake if available, otherwise calls g++/gcc directly.
-.EXAMPLE
-  powershell -ExecutionPolicy Bypass -File .\build.ps1
+  Builds dummy_ecu (C99). Uses CMake + Ninja if available, otherwise calls gcc directly.
+.PARAMETER Run
+  Run the normal drive cycle after building.
+.PARAMETER Fault
+  Run with a planted defect (1..15). See README.md or "dummy_ecu.exe --list".
+.PARAMETER Clean
+  Delete build/ first.
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File .\build.ps1 -Run
+.EXAMPLE
+  powershell -ExecutionPolicy Bypass -File .\build.ps1 -Fault 2
 #>
-param([switch]$Run, [switch]$Clean)
+param([switch]$Run, [int]$Fault = 0, [switch]$Clean)
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 
@@ -34,16 +40,16 @@ if (Get-Command cmake -ErrorAction SilentlyContinue) {
     Invoke-Checked cmake @('--build', 'build')
     $exePath = Get-ChildItem build -Recurse -Filter dummy_ecu.exe | Select-Object -First 1 -ExpandProperty FullName
 }
-elseif (Get-Command g++ -ErrorAction SilentlyContinue) {
-    Write-Host 'CMake not found - building with g++ directly.'
-    $flags = @('-std=c++17', '-g', '-Wall', '-Wextra', '-Iinclude')
-    Invoke-Checked gcc @('-std=c11', '-g', '-Wall', '-Wextra', '-Iinclude', '-c', 'src_c/crc8.c', '-o', 'build/crc8.o')
-    Invoke-Checked g++ ($flags + @('src/main.cpp', 'src/sensor.cpp', 'src/stats.cpp', 'src/controller.cpp', 'build/crc8.o', '-o', 'build/dummy_ecu.exe'))
+elseif (Get-Command gcc -ErrorAction SilentlyContinue) {
+    Write-Host 'CMake not found - building with gcc directly.'
+    $sources = Get-ChildItem src -Filter *.c | ForEach-Object { $_.FullName }
+    Invoke-Checked gcc (@('-std=c99', '-g', '-Wall', '-Wextra', '-Iinclude') + $sources + @('-o', 'build/dummy_ecu.exe'))
     $exePath = (Resolve-Path build/dummy_ecu.exe).Path
 }
 else {
-    throw 'No compiler found. Install CMake + a C++ compiler (see README.md).'
+    throw 'No compiler found. Get the toolchain into third_party/ (see third_party/README.md).'
 }
 
 Write-Host "OK  Built $exePath" -ForegroundColor Green
-if ($Run) { & $exePath }
+if ($Fault -gt 0) { & $exePath --fault $Fault; Write-Host "exit code $LASTEXITCODE" }
+elseif ($Run) { & $exePath }
