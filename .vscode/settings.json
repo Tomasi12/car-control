@@ -1,0 +1,6 @@
+{
+  "cmake.cmakePath": "${workspaceFolder}/third_party/mingw64/bin/cmake.exe",
+  "terminal.integrated.env.windows": {
+    "PATH": "${workspaceFolder}\third_party\mingw64\bin;${env:PATH}"
+  }
+}
