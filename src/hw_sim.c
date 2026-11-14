@@ -47,7 +47,7 @@ static void sim_put_frame(u32 mb, u32 id, const u8 *data, u32 dlc)
 
 static u32 to_adc(float value, float full_scale)
 {
-    float raw = (value / full_scale) * 4095.0f;
+    float raw = (value / full_scale) * 4095.0f; /* SAFE(div_zero): static, every caller passes a non-zero constant (100.0f, 190.0f) */
     if (raw < 0.0f) {
         raw = 0.0f;
     }
