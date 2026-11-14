@@ -53,8 +53,8 @@ return (u16)(sum / n); /* DEFECT(div_zero): n == 0 */
 | Marker | Meaning | Count |
 |---|---|---|
 | `DEFECT(category)` | run-time error — an analyzer **should** report it | 33 |
-| `RULE(category)` | coding-rule violation (MISRA-style) — **should** be reported | 6 |
-| `SAFE(category)` | correct code — reporting it is a **false positive** | 19 |
+| `RULE(category)` | coding-rule violation (MISRA-style) — **should** be reported | 8 |
+| `SAFE(category)` | correct code — reporting it is a **false positive** | 20 |
 
 Regenerate the full list (file, line, kind, category) into `expected_findings.csv`:
 ```powershell

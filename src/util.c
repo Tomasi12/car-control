@@ -78,11 +78,11 @@ s32 parse_decimal(const char *s, bool *ok)
         s++;
     }
     if (*s == '\0') {
-        goto done;
+        goto done; /* RULE(goto): goto used */
     }
     while (*s != '\0') {
         if ((*s < '0') || (*s > '9')) {
-            goto done;
+            goto done; /* RULE(goto): goto used */
         }
         value = (value * 10) + (*s - '0'); /* DEFECT(overflow): long digit strings overflow s32 */
         s++;
