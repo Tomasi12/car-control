@@ -19,7 +19,7 @@ void pid_reset(Pid *p)
 
 s32 pid_update(Pid *p, s32 setpoint, s32 measured, s32 dt_ms)
 {
-    s32 error = setpoint - measured;
+    s32 error = setpoint - measured; /* DEFECT(overflow): setpoint - measured does not fit in s32 for extreme inputs */
     s32 deriv;
     s32 out;
 

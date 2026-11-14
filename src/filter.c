@@ -44,10 +44,10 @@ s16 rate_limit(s16 prev, s16 target, s16 max_step)
     s16 diff = (s16)(target - prev); /* DEFECT(overflow): target - prev does not fit in s16, e.g. 30000 - (-30000) */
 
     if (diff > max_step) {
-        return (s16)(prev + max_step);
+        return (s16)(prev + max_step); /* DEFECT(overflow): prev + max_step can leave the s16 range, e.g. 30000 + 10000 */
     }
     if (diff < -max_step) {
-        return (s16)(prev - max_step);
+        return (s16)(prev - max_step); /* DEFECT(overflow): prev - max_step can leave the s16 range */
     }
     return target;
 }

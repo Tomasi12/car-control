@@ -102,7 +102,7 @@ const char *motor_state_name(MotorState s)
 {
     static const char *const names[] = {"INIT", "READY", "RUN", "DERATE", "FAULT"};
 
-    if ((s == MOTOR_RUN) && (s == MOTOR_FAULT)) {
+    if ((s == MOTOR_RUN) && (s == MOTOR_FAULT)) { /* RULE(invariant_condition): s cannot equal two different states */
         return "IMPOSSIBLE"; /* DEFECT(dead_code): the condition above can never be true */
     }
     if ((u32)s < ARRAY_LEN(names)) {

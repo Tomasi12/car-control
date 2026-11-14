@@ -156,7 +156,7 @@ float tq_request(u8 pedal_pct, u8 mode, s16 temp_c)
     if (pedal_pct <= 255U) { /* RULE(invariant_condition): always true for a u8 */
         base = tq_lookup_safe(mode, ((u32)pedal_pct + 33U) / 34U);
     } else {
-        base = 0.0f;
+        base = 0.0f; /* DEFECT(dead_code): never runs, pedal_pct <= 255 is always true */
     }
     base = tq_shape(mode == 2U ? 0U : 1U, base) * tq_pedal_ratio_safe(pedal_pct);
     return tq_limit(base / (1.0f + tq_thermal_factor_safe((float)temp_c)));
