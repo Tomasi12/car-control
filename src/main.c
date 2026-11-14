@@ -9,15 +9,19 @@
 #include "adc.h"
 #include "battery.h"
 #include "can.h"
+#include "config_parser.h"
 #include "crc.h"
 #include "diag.h"
+#include "diag_buffer.h"
 #include "filter.h"
 #include "hw_regs.h"
+#include "logger.h"
 #include "motor_ctrl.h"
 #include "nvm.h"
 #include "pid.h"
 #include "ring_buffer.h"
 #include "scheduler.h"
+#include "torque_map.h"
 #include "util.h"
 #include "watchdog.h"
 #include "wheel_speed.h"
@@ -35,6 +39,7 @@ static MovingAvg  g_temp_avg;
 static s32        g_batt_lp;
 static s16        g_temp_c;
 static u16        g_batt_mv;
+static s16        g_torque_x100;
 
 /* ---------- CAN handlers ---------- */
 
@@ -83,6 +88,25 @@ static void task_control_10ms(void)
     diag_report(DTC_SPEED_DEV, wheel_max_delta_x10() > 50U, sched_now());
 }
 
+/* Service features (logger, tester config, snapshot buffer, torque map), normal paths only. */
+static void service_task_100ms(void)
+{
+    static u32 calls;
+
+    calls++;
+    g_torque_x100 = tq_to_can_safe(tq_request((u8)g_pedal_pct, (u8)cfg_mode_from_raw_checked(g_mode), g_temp_c));
+    (void)dbuf_push_safe((u16)vehicle_speed_kmh_x10());
+    if ((calls % 10U) == 0U) {
+        log_temperature_safe((float)g_temp_c);
+        log_tagged_safe(motor_state_name(motor_state()));
+    }
+    if (calls == 60U) {
+        log_text_safe("snapshot done");
+        dbuf_stop();
+        (void)dbuf_start(DBUF_MAX_SAMPLES);
+    }
+}
+
 static void task_slow_100ms(void)
 {
     CanFrame st;
@@ -103,6 +127,7 @@ static void task_slow_100ms(void)
     st.data[7] = crc8_j1850(st.data, 7U);
     can_send(&st);
 
+    service_task_100ms();
     wdg_kick();
 }
 
@@ -224,7 +249,18 @@ static void print_summary(void)
            (double)wheel_slip(WHEEL_FL), float_equal(wheel_slip(WHEEL_FL), 0.0f) ? " (none)" : "");
     printf("motor current RMS-ish %u\n", (unsigned)sqrt_u32((u32)adc_filtered(ADC_CH_CURRENT) * adc_filtered(ADC_CH_CURRENT)));
 
-    printf("config log (%lu):", (unsigned long)rb_count(&g_config_log));
+    printf("torque %d.%02d Nm, mode %s, trim %d, cfg errors %u, snapshot %lu samples (sum %lu), lock depth %lu\n",
+           (int)(g_torque_x100 / 100), (int)abs_s16((s16)(g_torque_x100 % 100)), cfg_mode_name_safe(DRIVE_NORMAL),
+           (int)cfg_trim(), (unsigned)cfg_errors(), (unsigned long)dbuf_used(), (unsigned long)dbuf_checksum(),
+           (unsigned long)dbuf_lock_depth());
+    printf("log (%lu lines):", (unsigned long)log_count());
+    for (i = 0U; i < log_count(); i++) {
+        printf(" [%s]", log_line(i));
+    }
+    printf("\n");
+    dbuf_stop();
+
+    printf("config log (%lu):",(unsigned long)rb_count(&g_config_log));
     while (rb_pop(&g_config_log, &v)) {
         printf(" %u", (unsigned)v);
     }
@@ -279,6 +315,13 @@ int main(int argc, char **argv)
     rb_init(&g_config_log);
     mavg_init(&g_temp_avg);
     sched_init();
+    log_init();
+    log_set_tag_safe("ecu");
+    cfg_init();
+    (void)cfg_parse_line("mode=1");
+    (void)cfg_parse_line("trim=-12");
+    dbuf_spare_reset();
+    (void)dbuf_start(64U);
 
     can_register_handler(CAN_ID_PEDAL, on_pedal_frame);
     can_register_handler(CAN_ID_CONFIG, on_config_frame);

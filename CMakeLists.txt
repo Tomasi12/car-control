@@ -15,15 +15,20 @@ endif()
 add_library(ecu STATIC
   src/adc.c
   src/battery.c
+  src/config_parser.c
   src/can.c
   src/crc.c
   src/diag.c
+  src/diag_buffer.c
   src/filter.c
+  src/logger.c
   src/motor_ctrl.c
   src/nvm.c
+  src/os_lock.c
   src/pid.c
   src/ring_buffer.c
   src/scheduler.c
+  src/torque_map.c
   src/util.c
   src/watchdog.c
   src/wheel_speed.c
