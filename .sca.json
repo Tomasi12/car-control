@@ -1,0 +1,4 @@
+{
+  "$comment": "SCA project settings for the car-control test field. magic-number is off by default in SCA; the answer key plants one.",
+  "rules": { "sca-own:magic-number": true }
+}
